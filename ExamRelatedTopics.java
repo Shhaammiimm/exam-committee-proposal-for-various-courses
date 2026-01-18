@@ -8,9 +8,13 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.Statement;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
 
 /**
- *
+ * Exam Related Topics Form - Fourth step of the exam committee proposal wizard.
+ * Allows assignment of question makers, internal teachers, scrutinizer, and external examiners.
+ * 
  * @author ACER
  */
 public class ExamRelatedTopics extends javax.swing.JFrame {
@@ -258,40 +262,97 @@ public class ExamRelatedTopics extends javax.swing.JFrame {
     }//GEN-LAST:event_jButton1ActionPerformed
 
     private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton2ActionPerformed
-          String a=jComboBox1.getSelectedItem().toString();
-          String b=jComboBox2.getSelectedItem().toString();
-          String c=jComboBox3.getSelectedItem().toString();
-          String d=jComboBox4.getSelectedItem().toString();
-          String e=jComboBox5.getSelectedItem().toString();
-          String f=jComboBox6.getSelectedItem().toString();
-          String g=jComboBox7.getSelectedItem().toString();
-          String h=jComboBox8.getSelectedItem().toString();
-          String i=jComboBox9.getSelectedItem().toString();
-          String j=jComboBox10.getSelectedItem().toString();
-          String k=jComboBox11.getSelectedItem().toString();
-       try{
-            Class.forName("com.mysql.cj.jdbc.Driver");
-            Connection con=DriverManager.getConnection("jdbc:mysql://localhost:3306/hello?useSSL-false","root","Databasepass2099");
-            Statement stm=con.createStatement();
-            String sql="INSERT INTO exam_related VALUES('"+a+"','"+e+"')";
-            stm.executeUpdate(sql);
-            sql="INSERT INTO exam_related VALUES('"+b+"','"+f+"')";
-            stm.executeUpdate(sql);
-            sql="INSERT INTO exam_related VALUES('"+c+"','"+g+"')";
-            stm.executeUpdate(sql);
-            sql="INSERT INTO exam_related VALUES('"+d+"','"+h+"')";
-            stm.executeUpdate(sql);
-            sql="INSERT INTO external_table VALUES('"+i+"','"+j+"','"+k+"')";
-            stm.executeUpdate(sql);
-           
-                    
-        }catch(Exception xxx){
-            
+        // Validate all fields are selected
+        if (jComboBox1.getSelectedItem() == null || jComboBox2.getSelectedItem() == null 
+                || jComboBox3.getSelectedItem() == null || jComboBox4.getSelectedItem() == null
+                || jComboBox5.getSelectedItem() == null || jComboBox6.getSelectedItem() == null
+                || jComboBox7.getSelectedItem() == null || jComboBox8.getSelectedItem() == null
+                || jComboBox9.getSelectedItem() == null || jComboBox10.getSelectedItem() == null
+                || jComboBox11.getSelectedItem() == null) {
+            DatabaseConnection.showError(this, "Validation Error", "Please select all required fields.");
+            return;
         }
         
-        Final vp = new Final();
-        vp.setVisible(true);
-        this.dispose();         // TODO add your handling code here:
+        String questionMaker = jComboBox1.getSelectedItem().toString();
+        String internalTeacher1 = jComboBox2.getSelectedItem().toString();
+        String internalTeacher2 = jComboBox3.getSelectedItem().toString();
+        String scrutinizer = jComboBox4.getSelectedItem().toString();
+        String questionMakerDesignation = jComboBox5.getSelectedItem().toString();
+        String internalTeacher1Designation = jComboBox6.getSelectedItem().toString();
+        String internalTeacher2Designation = jComboBox7.getSelectedItem().toString();
+        String scrutinizerDesignation = jComboBox8.getSelectedItem().toString();
+        String externalName = jComboBox9.getSelectedItem().toString();
+        String externalDepartment = jComboBox10.getSelectedItem().toString();
+        String externalUniversity = jComboBox11.getSelectedItem().toString();
+        
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        
+        try {
+            conn = DatabaseConnection.getConnection();
+            
+            // Insert exam related data using PreparedStatement
+            String insertExamRelatedSql = "INSERT INTO exam_related (name, rank) VALUES (?, ?)";
+            
+            // Insert question maker
+            pstmt = conn.prepareStatement(insertExamRelatedSql);
+            pstmt.setString(1, questionMaker);
+            pstmt.setString(2, questionMakerDesignation);
+            pstmt.executeUpdate();
+            DatabaseConnection.closePreparedStatement(pstmt);
+            
+            // Insert internal teacher 1
+            pstmt = conn.prepareStatement(insertExamRelatedSql);
+            pstmt.setString(1, internalTeacher1);
+            pstmt.setString(2, internalTeacher1Designation);
+            pstmt.executeUpdate();
+            DatabaseConnection.closePreparedStatement(pstmt);
+            
+            // Insert internal teacher 2
+            pstmt = conn.prepareStatement(insertExamRelatedSql);
+            pstmt.setString(1, internalTeacher2);
+            pstmt.setString(2, internalTeacher2Designation);
+            pstmt.executeUpdate();
+            DatabaseConnection.closePreparedStatement(pstmt);
+            
+            // Insert scrutinizer
+            pstmt = conn.prepareStatement(insertExamRelatedSql);
+            pstmt.setString(1, scrutinizer);
+            pstmt.setString(2, scrutinizerDesignation);
+            pstmt.executeUpdate();
+            DatabaseConnection.closePreparedStatement(pstmt);
+            
+            // Insert external examiner
+            String insertExternalSql = "INSERT INTO external_table (name, dept, uni) VALUES (?, ?, ?)";
+            pstmt = conn.prepareStatement(insertExternalSql);
+            pstmt.setString(1, externalName);
+            pstmt.setString(2, externalDepartment);
+            pstmt.setString(3, externalUniversity);
+            pstmt.executeUpdate();
+            
+            DatabaseConnection.showSuccess(this, "Success", "Exam related details saved successfully!");
+            
+            // Navigate to final form
+            Final finalForm = new Final();
+            finalForm.setVisible(true);
+            this.dispose();
+            
+        } catch (ClassNotFoundException e) {
+            DatabaseConnection.showError(this, "Database Error", 
+                    "MySQL JDBC Driver not found. Please check your classpath.");
+            e.printStackTrace();
+        } catch (SQLException e) {
+            DatabaseConnection.showError(this, "Database Error", 
+                    "Error saving exam related details: " + e.getMessage());
+            e.printStackTrace();
+        } catch (Exception e) {
+            DatabaseConnection.showError(this, "Error", 
+                    "An unexpected error occurred: " + e.getMessage());
+            e.printStackTrace();
+        } finally {
+            DatabaseConnection.closePreparedStatement(pstmt);
+            DatabaseConnection.closeConnection(conn);
+        }
     }//GEN-LAST:event_jButton2ActionPerformed
 
     private void jComboBox7ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jComboBox7ActionPerformed
@@ -299,51 +360,101 @@ public class ExamRelatedTopics extends javax.swing.JFrame {
     }//GEN-LAST:event_jComboBox7ActionPerformed
 
     private void jButton3ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton3ActionPerformed
-        // TODO add your handling code here:
-         try{
-            Class.forName("com.mysql.cj.jdbc.Driver");
-            Connection con=DriverManager.getConnection("jdbc:mysql://localhost:3306/hello?useSSL-false","root","Databasepass2099");
-            Statement stm=con.createStatement();
-            String sq="Select * from teacher_name";
+        // Clear existing items
+        jComboBox1.removeAllItems();
+        jComboBox2.removeAllItems();
+        jComboBox3.removeAllItems();
+        jComboBox4.removeAllItems();
+        jComboBox5.removeAllItems();
+        jComboBox6.removeAllItems();
+        jComboBox7.removeAllItems();
+        jComboBox8.removeAllItems();
+        jComboBox9.removeAllItems();
+        jComboBox10.removeAllItems();
+        jComboBox11.removeAllItems();
+        
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+        
+        try {
+            conn = DatabaseConnection.getConnection();
             
-            ResultSet rs=stm.executeQuery(sq);
-           while(rs.next() ){
-              String name=rs.getString("name");
-               jComboBox1.addItem(name);
-               jComboBox2.addItem(name);
-                jComboBox3.addItem(name);
-                jComboBox4.addItem(name);
-             // jComboBox2.addItem(id);
-            }
-           sq="Select * from external";
+            // Load teacher names
+            String selectTeachersSql = "SELECT * FROM teacher_name";
+            pstmt = conn.prepareStatement(selectTeachersSql);
+            rs = pstmt.executeQuery();
             
-            rs=stm.executeQuery(sq);
-           while(rs.next() ){
-              String name=rs.getString("Teacher_name");
-              String name1=rs.getString("Department");
-              String name2=rs.getString("University");
-               jComboBox9.addItem(name);
-               jComboBox10.addItem(name1);
-                jComboBox11.addItem(name2);
-       
-             
-            }
-           
-           sq="Select * from designation";
-            
-            rs=stm.executeQuery(sq);
-           while(rs.next() ){
-              String name=rs.getString("name");
-               jComboBox5.addItem(name);
-               jComboBox6.addItem(name);
-                jComboBox7.addItem(name);
-                jComboBox8.addItem(name);
-             
+            while (rs.next()) {
+                String name = rs.getString("name");
+                if (name != null && !name.isEmpty()) {
+                    jComboBox1.addItem(name);
+                    jComboBox2.addItem(name);
+                    jComboBox3.addItem(name);
+                    jComboBox4.addItem(name);
+                }
             }
             
+            DatabaseConnection.closeResultSet(rs);
+            DatabaseConnection.closePreparedStatement(pstmt);
             
-        }catch(Exception e){
+            // Load external examiners
+            String selectExternalSql = "SELECT * FROM external";
+            pstmt = conn.prepareStatement(selectExternalSql);
+            rs = pstmt.executeQuery();
             
+            while (rs.next()) {
+                String teacherName = rs.getString("Teacher_name");
+                String department = rs.getString("Department");
+                String university = rs.getString("University");
+                
+                if (teacherName != null && !teacherName.isEmpty()) {
+                    jComboBox9.addItem(teacherName);
+                }
+                if (department != null && !department.isEmpty()) {
+                    jComboBox10.addItem(department);
+                }
+                if (university != null && !university.isEmpty()) {
+                    jComboBox11.addItem(university);
+                }
+            }
+            
+            DatabaseConnection.closeResultSet(rs);
+            DatabaseConnection.closePreparedStatement(pstmt);
+            
+            // Load designations
+            String selectDesignationsSql = "SELECT * FROM designation";
+            pstmt = conn.prepareStatement(selectDesignationsSql);
+            rs = pstmt.executeQuery();
+            
+            while (rs.next()) {
+                String name = rs.getString("name");
+                if (name != null && !name.isEmpty()) {
+                    jComboBox5.addItem(name);
+                    jComboBox6.addItem(name);
+                    jComboBox7.addItem(name);
+                    jComboBox8.addItem(name);
+                }
+            }
+            
+            DatabaseConnection.showSuccess(this, "Success", "Teachers, external examiners, and designations loaded successfully.");
+            
+        } catch (ClassNotFoundException e) {
+            DatabaseConnection.showError(this, "Database Error", 
+                    "MySQL JDBC Driver not found. Please check your classpath.");
+            e.printStackTrace();
+        } catch (SQLException e) {
+            DatabaseConnection.showError(this, "Database Error", 
+                    "Error loading data: " + e.getMessage());
+            e.printStackTrace();
+        } catch (Exception e) {
+            DatabaseConnection.showError(this, "Error", 
+                    "An unexpected error occurred: " + e.getMessage());
+            e.printStackTrace();
+        } finally {
+            DatabaseConnection.closeResultSet(rs);
+            DatabaseConnection.closePreparedStatement(pstmt);
+            DatabaseConnection.closeConnection(conn);
         }
     }//GEN-LAST:event_jButton3ActionPerformed
 

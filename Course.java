@@ -5,9 +5,15 @@
 package project;
 
 import java.sql.*;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 
 /**
- *
+ * Course Selection Form - Second step of the exam committee proposal wizard.
+ * Displays and allows selection of courses based on exam details.
+ * 
  * @author ACER
  */
 public class Course extends javax.swing.JFrame {
@@ -115,38 +121,90 @@ public class Course extends javax.swing.JFrame {
     }// </editor-fold>//GEN-END:initComponents
 
     private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
-        // TODO add your handling code here:
-       try{
-            Class.forName("com.mysql.cj.jdbc.Driver");
-            Connection con=DriverManager.getConnection("jdbc:mysql://localhost:3306/hello?useSSL-false","root","Databasepass2099");
-            Statement stm=con.createStatement();
-            String sq="Select * from exam_table";
+        // Clear existing items
+        jComboBox1.removeAllItems();
+        jComboBox2.removeAllItems();
+        
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+        
+        try {
+            conn = DatabaseConnection.getConnection();
             
-            ResultSet rs=stm.executeQuery(sq);
-            String p="";
-            while(rs.next()){
-                p=p+"l_"+rs.getString("level")+"_s_"+rs.getString("semester");
+            // Get exam details from exam_table
+            String selectExamSql = "SELECT * FROM exam_table ORDER BY id DESC LIMIT 1";
+            pstmt = conn.prepareStatement(selectExamSql);
+            rs = pstmt.executeQuery();
+            
+            if (!rs.next()) {
+                DatabaseConnection.showError(this, "Error", "No exam details found. Please go back and enter exam information.");
+                return;
             }
             
-            rs=stm.executeQuery("select * from "+p);
-           while(rs.next() ){
-              String name="";
-              name=name+" "+rs.getString("course_title");
-               
-                name=name+" "+rs.getString("exam_type");
-                name=name+" "+rs.getString("credit")+" (Credit)";
-                String nn=rs.getString("course_code");
-               jComboBox1.addItem(nn);
-               jComboBox2.addItem(name);
-             // jComboBox2.addItem(id);
+            String level = rs.getString("level");
+            String semester = rs.getString("semester");
+            
+            // Close previous result set and statement
+            DatabaseConnection.closeResultSet(rs);
+            DatabaseConnection.closePreparedStatement(pstmt);
+            
+            // Construct table name (note: dynamic table names require careful validation)
+            String tableName = "l_" + level + "_s_" + semester;
+            
+            // Validate table name to prevent SQL injection
+            if (!tableName.matches("^l_\\d+_s_[a-z]+$")) {
+                DatabaseConnection.showError(this, "Error", "Invalid exam level or semester.");
+                return;
             }
-           
             
+            // Note: For production, consider using a mapping table instead of dynamic table names
+            // For now, using prepared statement with table name validation
+            String selectCoursesSql = "SELECT * FROM " + tableName;
             
-        }catch(Exception e){
+            pstmt = conn.prepareStatement(selectCoursesSql);
+            rs = pstmt.executeQuery();
             
+            boolean hasCourses = false;
+            while (rs.next()) {
+                hasCourses = true;
+                String courseCode = rs.getString("course_code");
+                String courseTitle = rs.getString("course_title");
+                String examType = rs.getString("exam_type");
+                String credit = rs.getString("credit");
+                
+                String courseDisplay = courseTitle + " " + examType + " " + credit + " (Credit)";
+                
+                if (courseCode != null && !courseCode.isEmpty()) {
+                    jComboBox1.addItem(courseCode);
+                    jComboBox2.addItem(courseDisplay);
+                }
+            }
+            
+            if (!hasCourses) {
+                DatabaseConnection.showError(this, "No Courses", 
+                        "No courses found for the selected exam details. Please check the database.");
+            } else {
+                DatabaseConnection.showSuccess(this, "Success", "Courses loaded successfully.");
+            }
+            
+        } catch (ClassNotFoundException e) {
+            DatabaseConnection.showError(this, "Database Error", 
+                    "MySQL JDBC Driver not found. Please check your classpath.");
+            e.printStackTrace();
+        } catch (SQLException e) {
+            DatabaseConnection.showError(this, "Database Error", 
+                    "Error loading courses: " + e.getMessage());
+            e.printStackTrace();
+        } catch (Exception e) {
+            DatabaseConnection.showError(this, "Error", 
+                    "An unexpected error occurred: " + e.getMessage());
+            e.printStackTrace();
+        } finally {
+            DatabaseConnection.closeResultSet(rs);
+            DatabaseConnection.closePreparedStatement(pstmt);
+            DatabaseConnection.closeConnection(conn);
         }
-      
     }//GEN-LAST:event_jButton1ActionPerformed
 
     private void jComboBox2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jComboBox2ActionPerformed
@@ -154,22 +212,58 @@ public class Course extends javax.swing.JFrame {
     }//GEN-LAST:event_jComboBox2ActionPerformed
 
     private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton2ActionPerformed
-         String a=jComboBox2.getSelectedItem().toString();
-       try{
-            Class.forName("com.mysql.cj.jdbc.Driver");
-            Connection con=DriverManager.getConnection("jdbc:mysql://localhost:3306/hello?useSSL-false","root","Databasepass2099");
-            Statement stm=con.createStatement();
-            String sql="INSERT INTO course_table VALUES('"+a+"')";
-            stm.executeUpdate(sql);
-           
-                    
-        }catch(Exception e){
-            
+        if (jComboBox2.getSelectedItem() == null) {
+            DatabaseConnection.showError(this, "Validation Error", "Please select a course first.");
+            return;
         }
         
-        Exam_Committee vp = new Exam_Committee();
-        vp.setVisible(true);
-        this.dispose();        // TODO add your handling code here:
+        String selectedCourse = jComboBox2.getSelectedItem().toString();
+        
+        if (!DatabaseConnection.isValidString(selectedCourse)) {
+            DatabaseConnection.showError(this, "Validation Error", "Invalid course selection.");
+            return;
+        }
+        
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        
+        try {
+            conn = DatabaseConnection.getConnection();
+            
+            // Use PreparedStatement to prevent SQL injection
+            String sql = "INSERT INTO course_table (name) VALUES (?)";
+            pstmt = conn.prepareStatement(sql);
+            pstmt.setString(1, selectedCourse);
+            
+            int rowsAffected = pstmt.executeUpdate();
+            
+            if (rowsAffected > 0) {
+                DatabaseConnection.showSuccess(this, "Success", "Course selected successfully!");
+                
+                // Navigate to next form
+                Exam_Committee examCommitteeForm = new Exam_Committee();
+                examCommitteeForm.setVisible(true);
+                this.dispose();
+            } else {
+                DatabaseConnection.showError(this, "Error", "Failed to save course selection.");
+            }
+            
+        } catch (ClassNotFoundException e) {
+            DatabaseConnection.showError(this, "Database Error", 
+                    "MySQL JDBC Driver not found. Please check your classpath.");
+            e.printStackTrace();
+        } catch (SQLException e) {
+            DatabaseConnection.showError(this, "Database Error", 
+                    "Error saving course selection: " + e.getMessage());
+            e.printStackTrace();
+        } catch (Exception e) {
+            DatabaseConnection.showError(this, "Error", 
+                    "An unexpected error occurred: " + e.getMessage());
+            e.printStackTrace();
+        } finally {
+            DatabaseConnection.closePreparedStatement(pstmt);
+            DatabaseConnection.closeConnection(conn);
+        }
     }//GEN-LAST:event_jButton2ActionPerformed
 
     private void jButton3ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton3ActionPerformed

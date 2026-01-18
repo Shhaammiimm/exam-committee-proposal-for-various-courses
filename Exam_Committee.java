@@ -8,9 +8,13 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.Statement;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
 
 /**
- *
+ * Exam Committee Form - Third step of the exam committee proposal wizard.
+ * Allows selection of committee members (Chairman, Member 1, Member 2) and their designations.
+ * 
  * @author ACER
  */
 public class Exam_Committee extends javax.swing.JFrame {
@@ -153,28 +157,66 @@ public class Exam_Committee extends javax.swing.JFrame {
     }// </editor-fold>//GEN-END:initComponents
 
     private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
-        // TODO add your handling code here:
-        
-          String a=jComboBox1.getSelectedItem().toString();
-          String b=jComboBox2.getSelectedItem().toString();
-          String c=jComboBox3.getSelectedItem().toString();
-          String d=jComboBox4.getSelectedItem().toString();
-          String e=jComboBox5.getSelectedItem().toString();
-          String f=jComboBox6.getSelectedItem().toString();
-       try{
-            Class.forName("com.mysql.cj.jdbc.Driver");
-            Connection con=DriverManager.getConnection("jdbc:mysql://localhost:3306/hello?useSSL-false","root","Databasepass2099");
-            Statement stm=con.createStatement();
-            String sql="INSERT INTO exam_comittee VALUES('"+a+"','"+d+"','"+b+"','"+e+"','"+c+"','"+f+"')";
-            stm.executeUpdate(sql);
-           
-                    
-        }catch(Exception g){
-            
+        // Validate all fields are selected
+        if (jComboBox1.getSelectedItem() == null || jComboBox2.getSelectedItem() == null 
+                || jComboBox3.getSelectedItem() == null || jComboBox4.getSelectedItem() == null
+                || jComboBox5.getSelectedItem() == null || jComboBox6.getSelectedItem() == null) {
+            DatabaseConnection.showError(this, "Validation Error", "Please select all committee members and designations.");
+            return;
         }
-        ExamRelatedTopics vp = new ExamRelatedTopics();
-        vp.setVisible(true);
-        this.dispose(); 
+        
+        String chairman = jComboBox1.getSelectedItem().toString();
+        String member1 = jComboBox2.getSelectedItem().toString();
+        String member2 = jComboBox3.getSelectedItem().toString();
+        String chairmanDesignation = jComboBox4.getSelectedItem().toString();
+        String member1Designation = jComboBox5.getSelectedItem().toString();
+        String member2Designation = jComboBox6.getSelectedItem().toString();
+        
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        
+        try {
+            conn = DatabaseConnection.getConnection();
+            
+            // Use PreparedStatement to prevent SQL injection
+            String sql = "INSERT INTO exam_comittee (chairman, cname, mem1, name1, mem2, name2) VALUES (?, ?, ?, ?, ?, ?)";
+            pstmt = conn.prepareStatement(sql);
+            pstmt.setString(1, chairman);
+            pstmt.setString(2, chairmanDesignation);
+            pstmt.setString(3, member1);
+            pstmt.setString(4, member1Designation);
+            pstmt.setString(5, member2);
+            pstmt.setString(6, member2Designation);
+            
+            int rowsAffected = pstmt.executeUpdate();
+            
+            if (rowsAffected > 0) {
+                DatabaseConnection.showSuccess(this, "Success", "Exam committee details saved successfully!");
+                
+                // Navigate to next form
+                ExamRelatedTopics examRelatedForm = new ExamRelatedTopics();
+                examRelatedForm.setVisible(true);
+                this.dispose();
+            } else {
+                DatabaseConnection.showError(this, "Error", "Failed to save exam committee details.");
+            }
+            
+        } catch (ClassNotFoundException e) {
+            DatabaseConnection.showError(this, "Database Error", 
+                    "MySQL JDBC Driver not found. Please check your classpath.");
+            e.printStackTrace();
+        } catch (SQLException e) {
+            DatabaseConnection.showError(this, "Database Error", 
+                    "Error saving exam committee details: " + e.getMessage());
+            e.printStackTrace();
+        } catch (Exception e) {
+            DatabaseConnection.showError(this, "Error", 
+                    "An unexpected error occurred: " + e.getMessage());
+            e.printStackTrace();
+        } finally {
+            DatabaseConnection.closePreparedStatement(pstmt);
+            DatabaseConnection.closeConnection(conn);
+        }
     }//GEN-LAST:event_jButton1ActionPerformed
 
     private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton2ActionPerformed
@@ -190,35 +232,70 @@ public class Exam_Committee extends javax.swing.JFrame {
     }//GEN-LAST:event_jComboBox2ActionPerformed
 
     private void jButton3ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton3ActionPerformed
-        // TODO add your handling code here:
-        try{
-            Class.forName("com.mysql.cj.jdbc.Driver");
-            Connection con=DriverManager.getConnection("jdbc:mysql://localhost:3306/hello?useSSL-false","root","Databasepass2099");
-            Statement stm=con.createStatement();
-            String sq="Select * from teacher_name";
+        // Clear existing items
+        jComboBox1.removeAllItems();
+        jComboBox2.removeAllItems();
+        jComboBox3.removeAllItems();
+        jComboBox4.removeAllItems();
+        jComboBox5.removeAllItems();
+        jComboBox6.removeAllItems();
+        
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+        
+        try {
+            conn = DatabaseConnection.getConnection();
             
-            ResultSet rs=stm.executeQuery(sq);
-           while(rs.next() ){
-              String name=rs.getString("name");
-               jComboBox1.addItem(name);
-               jComboBox2.addItem(name);
-                jComboBox3.addItem(name);
-             // jComboBox2.addItem(id);
+            // Load teacher names
+            String selectTeachersSql = "SELECT * FROM teacher_name";
+            pstmt = conn.prepareStatement(selectTeachersSql);
+            rs = pstmt.executeQuery();
+            
+            while (rs.next()) {
+                String name = rs.getString("name");
+                if (name != null && !name.isEmpty()) {
+                    jComboBox1.addItem(name);
+                    jComboBox2.addItem(name);
+                    jComboBox3.addItem(name);
+                }
             }
-           sq="Select * from designation";
             
-            rs=stm.executeQuery(sq);
-           while(rs.next() ){
-              String name=rs.getString("name");
-               jComboBox4.addItem(name);
-               jComboBox5.addItem(name);
-                jComboBox6.addItem(name);
-             
+            DatabaseConnection.closeResultSet(rs);
+            DatabaseConnection.closePreparedStatement(pstmt);
+            
+            // Load designations
+            String selectDesignationsSql = "SELECT * FROM designation";
+            pstmt = conn.prepareStatement(selectDesignationsSql);
+            rs = pstmt.executeQuery();
+            
+            while (rs.next()) {
+                String name = rs.getString("name");
+                if (name != null && !name.isEmpty()) {
+                    jComboBox4.addItem(name);
+                    jComboBox5.addItem(name);
+                    jComboBox6.addItem(name);
+                }
             }
             
+            DatabaseConnection.showSuccess(this, "Success", "Teachers and designations loaded successfully.");
             
-        }catch(Exception e){
-            
+        } catch (ClassNotFoundException e) {
+            DatabaseConnection.showError(this, "Database Error", 
+                    "MySQL JDBC Driver not found. Please check your classpath.");
+            e.printStackTrace();
+        } catch (SQLException e) {
+            DatabaseConnection.showError(this, "Database Error", 
+                    "Error loading teachers and designations: " + e.getMessage());
+            e.printStackTrace();
+        } catch (Exception e) {
+            DatabaseConnection.showError(this, "Error", 
+                    "An unexpected error occurred: " + e.getMessage());
+            e.printStackTrace();
+        } finally {
+            DatabaseConnection.closeResultSet(rs);
+            DatabaseConnection.closePreparedStatement(pstmt);
+            DatabaseConnection.closeConnection(conn);
         }
     }//GEN-LAST:event_jButton3ActionPerformed
 

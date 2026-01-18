@@ -8,11 +8,15 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.Statement;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
 /**
- *
+ * Final Summary Form - Last step of the exam committee proposal wizard.
+ * Displays all collected information in a summary view.
+ * 
  * @author ACER
  */
 public class Final extends javax.swing.JFrame {
@@ -456,90 +460,138 @@ public class Final extends javax.swing.JFrame {
     }//GEN-LAST:event_jTextField18ActionPerformed
 
     private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
-        // TODO add your handling code here:
-        try{
-            Class.forName("com.mysql.cj.jdbc.Driver");
-            Connection con=DriverManager.getConnection("jdbc:mysql://localhost:3306/hello?useSSL-false","root","Databasepass2099");
-            Statement stm=con.createStatement();
-            String sq="Select * from exam_table";
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+        
+        try {
+            conn = DatabaseConnection.getConnection();
             
-            ResultSet rs=stm.executeQuery(sq);
-            String p="",q="",r="",s="";
-            while(rs.next()){
-                p=rs.getString("degree");
-                q=rs.getString("level");
-                r=rs.getString("semester");
-                s=rs.getString("year");
-            }
-            jTextField1.setText(p);
-            jTextField2.setText(q);
-            jTextField3.setText(r);
-            jTextField4.setText(s);
-            sq="Select * from course_table";
-             rs=stm.executeQuery(sq);
-             String t="";
-             while(rs.next()){
-                t=rs.getString("name");
+            // Load exam details (get latest entry)
+            String selectExamSql = "SELECT * FROM exam_table ORDER BY id DESC LIMIT 1";
+            pstmt = conn.prepareStatement(selectExamSql);
+            rs = pstmt.executeQuery();
+            
+            if (rs.next()) {
+                String degree = rs.getString("degree") != null ? rs.getString("degree") : "";
+                String level = rs.getString("level") != null ? rs.getString("level") : "";
+                String semester = rs.getString("semester") != null ? rs.getString("semester") : "";
+                String year = rs.getString("year") != null ? rs.getString("year") : "";
                 
+                jTextField1.setText(degree);
+                jTextField2.setText(level);
+                jTextField3.setText(semester);
+                jTextField4.setText(year);
             }
-             jTextField5.setText(t);
-             
-            sq="Select * from exam_comittee";
-             rs=stm.executeQuery(sq);
-             String pp="",qq="",rr="",ss="",tt="",uu="";
-             while(rs.next()){
-                pp=rs.getString("chairman");
-                qq=rs.getString("cname");
-                rr=rs.getString("mem1");
-                ss=rs.getString("name1");
-                tt=rs.getString("mem2");
-                uu=rs.getString("name2");
+            
+            DatabaseConnection.closeResultSet(rs);
+            DatabaseConnection.closePreparedStatement(pstmt);
+            
+            // Load course details (get latest entry)
+            String selectCourseSql = "SELECT * FROM course_table ORDER BY id DESC LIMIT 1";
+            pstmt = conn.prepareStatement(selectCourseSql);
+            rs = pstmt.executeQuery();
+            
+            if (rs.next()) {
+                String courseName = rs.getString("name") != null ? rs.getString("name") : "";
+                jTextField5.setText(courseName);
+            }
+            
+            DatabaseConnection.closeResultSet(rs);
+            DatabaseConnection.closePreparedStatement(pstmt);
+            
+            // Load exam committee details (get latest entry)
+            String selectCommitteeSql = "SELECT * FROM exam_comittee ORDER BY id DESC LIMIT 1";
+            pstmt = conn.prepareStatement(selectCommitteeSql);
+            rs = pstmt.executeQuery();
+            
+            if (rs.next()) {
+                String chairman = rs.getString("chairman") != null ? rs.getString("chairman") : "";
+                String chairmanDesignation = rs.getString("cname") != null ? rs.getString("cname") : "";
+                String member1 = rs.getString("mem1") != null ? rs.getString("mem1") : "";
+                String member1Designation = rs.getString("name1") != null ? rs.getString("name1") : "";
+                String member2 = rs.getString("mem2") != null ? rs.getString("mem2") : "";
+                String member2Designation = rs.getString("name2") != null ? rs.getString("name2") : "";
                 
+                jTextField6.setText(chairman);
+                jTextField7.setText(chairmanDesignation);
+                jTextField8.setText(member1);
+                jTextField9.setText(member1Designation);
+                jTextField10.setText(member2);
+                jTextField11.setText(member2Designation);
             }
-             jTextField6.setText(pp);
-             jTextField7.setText(qq);
-             jTextField8.setText(rr);
-             jTextField9.setText(ss);
-             jTextField10.setText(tt);
-             jTextField11.setText(uu);
-             
-              rs=stm.executeQuery("select * from exam_related");
-         List<String> stdlist=new ArrayList();
-           while(rs.next())
-          {
-              String name,rank;
-              name=rs.getString("name");
-              rank=rs.getString("rank");
-              stdlist.add(name);
-              stdlist.add(rank);
-          }
-             jTextField12.setText(stdlist.get(0));
-             jTextField13.setText(stdlist.get(1));
-             jTextField14.setText(stdlist.get(2));
-             jTextField15.setText(stdlist.get(3));
-             jTextField16.setText(stdlist.get(4));
-             jTextField17.setText(stdlist.get(5)); 
-             jTextField18.setText(stdlist.get(6));
-             jTextField19.setText(stdlist.get(7)); 
-             
-             sq="Select * from external_table";
-             rs=stm.executeQuery(sq);
-              pp="";qq="";rr="";
-             while(rs.next()){
-                pp=rs.getString("name");
-                qq=rs.getString("dept");
-                rr=rs.getString("uni");
             
-             }
-             jTextField20.setText(pp); 
-             jTextField21.setText(qq);
-             jTextField22.setText(rr); 
+            DatabaseConnection.closeResultSet(rs);
+            DatabaseConnection.closePreparedStatement(pstmt);
             
-        }catch(Exception e){
-                    
+            // Load exam related details (get latest entries)
+            String selectExamRelatedSql = "SELECT * FROM exam_related ORDER BY id DESC LIMIT 4";
+            pstmt = conn.prepareStatement(selectExamRelatedSql);
+            rs = pstmt.executeQuery();
+            
+            List<String> examRelatedList = new ArrayList<>();
+            while (rs.next()) {
+                String name = rs.getString("name") != null ? rs.getString("name") : "";
+                String rank = rs.getString("rank") != null ? rs.getString("rank") : "";
+                examRelatedList.add(name);
+                examRelatedList.add(rank);
+            }
+            
+            // Populate text fields if data exists
+            if (examRelatedList.size() >= 2) {
+                jTextField12.setText(examRelatedList.get(0));
+                jTextField13.setText(examRelatedList.get(1));
+            }
+            if (examRelatedList.size() >= 4) {
+                jTextField14.setText(examRelatedList.get(2));
+                jTextField15.setText(examRelatedList.get(3));
+            }
+            if (examRelatedList.size() >= 6) {
+                jTextField16.setText(examRelatedList.get(4));
+                jTextField17.setText(examRelatedList.get(5));
+            }
+            if (examRelatedList.size() >= 8) {
+                jTextField18.setText(examRelatedList.get(6));
+                jTextField19.setText(examRelatedList.get(7));
+            }
+            
+            DatabaseConnection.closeResultSet(rs);
+            DatabaseConnection.closePreparedStatement(pstmt);
+            
+            // Load external examiner details (get latest entry)
+            String selectExternalSql = "SELECT * FROM external_table ORDER BY id DESC LIMIT 1";
+            pstmt = conn.prepareStatement(selectExternalSql);
+            rs = pstmt.executeQuery();
+            
+            if (rs.next()) {
+                String externalName = rs.getString("name") != null ? rs.getString("name") : "";
+                String externalDept = rs.getString("dept") != null ? rs.getString("dept") : "";
+                String externalUni = rs.getString("uni") != null ? rs.getString("uni") : "";
+                
+                jTextField20.setText(externalName);
+                jTextField21.setText(externalDept);
+                jTextField22.setText(externalUni);
+            }
+            
+            DatabaseConnection.showSuccess(this, "Success", "Data loaded successfully!");
+            
+        } catch (ClassNotFoundException e) {
+            DatabaseConnection.showError(this, "Database Error", 
+                    "MySQL JDBC Driver not found. Please check your classpath.");
+            e.printStackTrace();
+        } catch (SQLException e) {
+            DatabaseConnection.showError(this, "Database Error", 
+                    "Error loading data: " + e.getMessage());
+            e.printStackTrace();
+        } catch (Exception e) {
+            DatabaseConnection.showError(this, "Error", 
+                    "An unexpected error occurred: " + e.getMessage());
+            e.printStackTrace();
+        } finally {
+            DatabaseConnection.closeResultSet(rs);
+            DatabaseConnection.closePreparedStatement(pstmt);
+            DatabaseConnection.closeConnection(conn);
         }
-        
-        
     }//GEN-LAST:event_jButton1ActionPerformed
 
     private void jTextField14ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jTextField14ActionPerformed
@@ -551,16 +603,17 @@ public class Final extends javax.swing.JFrame {
     }//GEN-LAST:event_jTextField16ActionPerformed
 
     private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton2ActionPerformed
-        // TODO add your handling code here:
-        try{
-            Class.forName("com.mysql.cj.jdbc.Driver");
-            Connection con=DriverManager.getConnection("jdbc:mysql://localhost:3306/hello?useSSL-false","root","Databasepass2099");
-            Statement stm=con.createStatement();
-            String sq="delete  from exam_table"+"where degree=CSE";
-            
-            stm.executeQuery(sq);
-        }catch(Exception e){
-            
+        // Exit application
+        int option = javax.swing.JOptionPane.showConfirmDialog(
+            this,
+            "Are you sure you want to exit?",
+            "Exit Application",
+            javax.swing.JOptionPane.YES_NO_OPTION,
+            javax.swing.JOptionPane.QUESTION_MESSAGE
+        );
+        
+        if (option == javax.swing.JOptionPane.YES_OPTION) {
+            System.exit(0);
         }
     }//GEN-LAST:event_jButton2ActionPerformed
 

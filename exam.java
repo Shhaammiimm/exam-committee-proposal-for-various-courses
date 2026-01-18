@@ -2,6 +2,16 @@
 package project;
 
 import java.sql.*;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+
+/**
+ * Exam Details Form - First step of the exam committee proposal wizard.
+ * Collects degree, level, semester, and session information.
+ * 
+ * @author ACER
+ */
 public class exam extends javax.swing.JFrame {
 
    
@@ -152,28 +162,63 @@ public class exam extends javax.swing.JFrame {
     }// </editor-fold>//GEN-END:initComponents
 
     private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
-        // TODO add your handling code here:
-        String a=jComboBox1.getSelectedItem().toString();
-        String b=jComboBox2.getSelectedItem().toString();
-        String c=jComboBox3.getSelectedItem().toString();
-        String d=jComboBox4.getSelectedItem().toString();
+        // Get values from form
+        String degree = jComboBox1.getSelectedItem() != null ? jComboBox1.getSelectedItem().toString() : "";
+        String level = jComboBox2.getSelectedItem() != null ? jComboBox2.getSelectedItem().toString() : "";
+        String semester = jComboBox3.getSelectedItem() != null ? jComboBox3.getSelectedItem().toString() : "";
+        String session = jComboBox4.getSelectedItem() != null ? jComboBox4.getSelectedItem().toString() : "";
         
-         try{
-            Class.forName("com.mysql.cj.jdbc.Driver");
-            Connection con=DriverManager.getConnection("jdbc:mysql://localhost:3306/hello?useSSL-false","root","Databasepass2099");
-            Statement stm=con.createStatement();
-            String sql="INSERT INTO exam_table VALUES('"+a+"','"+b+"','"+c+"','"+d+"')";
-            stm.executeUpdate(sql);
-           
-                    
-        }catch(Exception e){
-            
+        // Validate inputs
+        if (!DatabaseConnection.isValidString(degree) || !DatabaseConnection.isValidString(level) 
+                || !DatabaseConnection.isValidString(semester) || !DatabaseConnection.isValidString(session)) {
+            DatabaseConnection.showError(this, "Validation Error", "Please select all required fields.");
+            return;
         }
-         
-        Course pp = new Course();
-        pp.setVisible(true);
-        this.dispose();
         
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        
+        try {
+            // Get connection using utility class
+            conn = DatabaseConnection.getConnection();
+            
+            // Use PreparedStatement to prevent SQL injection
+            String sql = "INSERT INTO exam_table (degree, level, semester, year) VALUES (?, ?, ?, ?)";
+            pstmt = conn.prepareStatement(sql);
+            pstmt.setString(1, degree);
+            pstmt.setString(2, level);
+            pstmt.setString(3, semester);
+            pstmt.setString(4, session);
+            
+            int rowsAffected = pstmt.executeUpdate();
+            
+            if (rowsAffected > 0) {
+                DatabaseConnection.showSuccess(this, "Success", "Exam details saved successfully!");
+                // Navigate to next form
+                Course courseForm = new Course();
+                courseForm.setVisible(true);
+                this.dispose();
+            } else {
+                DatabaseConnection.showError(this, "Error", "Failed to save exam details.");
+            }
+            
+        } catch (ClassNotFoundException e) {
+            DatabaseConnection.showError(this, "Database Error", 
+                    "MySQL JDBC Driver not found. Please check your classpath.");
+            e.printStackTrace();
+        } catch (SQLException e) {
+            DatabaseConnection.showError(this, "Database Error", 
+                    "Error saving exam details: " + e.getMessage());
+            e.printStackTrace();
+        } catch (Exception e) {
+            DatabaseConnection.showError(this, "Error", 
+                    "An unexpected error occurred: " + e.getMessage());
+            e.printStackTrace();
+        } finally {
+            // Close resources
+            DatabaseConnection.closePreparedStatement(pstmt);
+            DatabaseConnection.closeConnection(conn);
+        }
     }//GEN-LAST:event_jButton1ActionPerformed
 
     private void jComboBox2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jComboBox2ActionPerformed
