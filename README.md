@@ -106,6 +106,10 @@ frontend/
    ```
    The API will run on `http://localhost:5000` by default.
 
+   ### Production backend
+
+   If you have deployed the backend, you can point the frontend to it by setting `REACT_APP_API_BASE` to the backend URL (for example: `https://exam-committee-proposal-for-various.vercel.app`). The frontend defaults to that URL when the environment variable is not set.
+
 ### Frontend
 
 1. Navigate to `frontend` directory:

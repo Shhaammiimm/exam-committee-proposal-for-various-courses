@@ -18,3 +18,4 @@ node_modules/
 # Ignore OS-specific files
 Thumbs.db
 # Ignore test output
+.env

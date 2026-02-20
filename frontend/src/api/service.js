@@ -1,6 +1,7 @@
 import axios from 'axios';
 
-const API_BASE = process.env.REACT_APP_API_BASE || ''; // leave empty to use proxy
+// Default to deployed backend; can be overridden with REACT_APP_API_BASE
+const API_BASE = process.env.REACT_APP_API_BASE || 'https://exam-committee-proposal-for-various.vercel.app';
 
 function authHeaders() {
   const token = localStorage.getItem('token');
