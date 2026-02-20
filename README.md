@@ -1,346 +1,190 @@
-# Exam Committee Proposal System
+# Exam Committee Proposal Application
 
-A Java Swing desktop application for managing exam committee proposals for various courses in an educational institution. The application provides a step-by-step wizard interface to collect and organize exam-related information including course details, committee members, and examination staff assignments.
+This repository contains a full-stack application for managing exam committee proposals across various courses. The app includes a React frontend and an Express/MongoDB backend.
 
-## 📋 Table of Contents
+## Table of Contents
 
-- [Features](#features)
-- [Technology Stack](#technology-stack)
-- [Prerequisites](#prerequisites)
-- [Installation](#installation)
-- [Configuration](#configuration)
-- [Database Setup](#database-setup)
-- [Usage](#usage)
-- [Project Structure](#project-structure)
-- [Security Improvements](#security-improvements)
-- [Contributing](#contributing)
-- [License](#license)
+1. [Project Overview](#project-overview)
+2. [Repository Structure](#repository-structure)
+3. [Setup & Running](#setup--running)
+4. [Working Procedure](#working-procedure)
+5. [API Endpoints](#api-endpoints)
+6. [Frontend Components](#frontend-components)
+7. [Backend Models](#backend-models)
+8. [Contributing](#contributing)
 
-## ✨ Features
+---
 
-- **Multi-Step Wizard Interface**: Streamlined workflow through 5 intuitive forms
-  1. **Exam Details**: Select degree, level, semester, and session
-  2. **Course Selection**: Choose courses from database based on exam details
-  3. **Exam Committee**: Assign committee members (Chairman, Member 1, Member 2) with designations
-  4. **Exam Related Topics**: Assign question makers, internal teachers, scrutinizer, and external examiners
-  5. **Final Summary**: View and generate complete proposal summary
+## Project Overview
 
-- **Database Integration**: MySQL database for persistent data storage
-- **Secure Data Handling**: Prepared statements to prevent SQL injection
-- **Error Handling**: Comprehensive error handling with user-friendly messages
-- **Data Validation**: Input validation to ensure data integrity
+The application allows a chairman to create, edit, and delete draft proposals for exam committees. Other roles (dean, VC, controller) can view and sign proposals to approve or cancel them. 
 
-## 🛠️ Technology Stack
+The express backend handles authentication, proposal management, and data persistence in MongoDB. The React frontend provides a user-friendly interface.
 
-- **Language**: Java 20
-- **GUI Framework**: Java Swing (JavaFX alternative)
-- **Database**: MySQL
-- **JDBC Driver**: MySQL Connector/J 8.3.0
-- **IDE**: NetBeans (compatible with other IDEs)
-- **Build Tool**: Ant (NetBeans default)
-
-## 📦 Prerequisites
-
-Before running this application, ensure you have the following installed:
-
-1. **Java Development Kit (JDK) 20 or higher**
-   - Download from [Oracle JDK](https://www.oracle.com/java/technologies/downloads/) or [OpenJDK](https://openjdk.org/)
-   - Verify installation: `java -version`
-
-2. **MySQL Server 8.0 or higher**
-   - Download from [MySQL Downloads](https://dev.mysql.com/downloads/mysql/)
-   - Ensure MySQL service is running
-
-3. **MySQL Connector/J Driver**
-   - Included in the project dependencies
-   - Version: 8.3.0
-
-4. **NetBeans IDE (Recommended)** or any Java IDE
-   - Download from [NetBeans](https://netbeans.apache.org/)
-
-## 🚀 Installation
-
-### Step 1: Clone the Repository
-
-```bash
-git clone https://github.com/yourusername/exam-committee-proposal-for-various-courses.git
-cd exam-committee-proposal-for-various-courses
-```
-
-### Step 2: Import Project
-
-**Using NetBeans:**
-1. Open NetBeans IDE
-2. Go to `File` → `Open Project`
-3. Select the project folder
-4. Click `Open Project`
-
-**Using IntelliJ IDEA:**
-1. Open IntelliJ IDEA
-2. Go to `File` → `Open`
-3. Select the project folder
-4. Click `OK`
-
-**Using Eclipse:**
-1. Open Eclipse
-2. Go to `File` → `Import`
-3. Select `Existing Projects into Workspace`
-4. Browse to the project folder
-5. Click `Finish`
-
-### Step 3: Configure Database
-
-See [Database Setup](#database-setup) section for detailed instructions.
-
-## ⚙️ Configuration
-
-### Database Configuration
-
-The application uses a `config.properties` file for database configuration. Create or modify this file in the project root:
-
-```properties
-# Database Configuration
-db.url=jdbc:mysql://localhost:3306/hello?useSSL=false
-db.username=root
-db.password=your_password_here
-```
-
-**Note**: If `config.properties` is not found, the application will use default values:
-- URL: `jdbc:mysql://localhost:3306/hello?useSSL=false`
-- Username: `root`
-- Password: `Databasepass2099`
-
-### Security Note
-
-⚠️ **Important**: For production use, ensure that `config.properties` is added to `.gitignore` to prevent committing sensitive credentials to version control.
-
-## 🗄️ Database Setup
-
-### Step 1: Create Database
-
-```sql
-CREATE DATABASE hello;
-USE hello;
-```
-
-### Step 2: Create Required Tables
-
-Execute the following SQL statements:
-
-```sql
--- Exam table
-CREATE TABLE exam_table (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    degree VARCHAR(50) NOT NULL,
-    level VARCHAR(10) NOT NULL,
-    semester VARCHAR(10) NOT NULL,
-    year VARCHAR(10) NOT NULL
-);
-
--- Course table
-CREATE TABLE course_table (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    name TEXT NOT NULL
-);
-
--- Exam committee table
-CREATE TABLE exam_comittee (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    chairman VARCHAR(100) NOT NULL,
-    cname VARCHAR(100) NOT NULL,
-    mem1 VARCHAR(100) NOT NULL,
-    name1 VARCHAR(100) NOT NULL,
-    mem2 VARCHAR(100) NOT NULL,
-    name2 VARCHAR(100) NOT NULL
-);
-
--- Exam related table
-CREATE TABLE exam_related (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(100) NOT NULL,
-    rank VARCHAR(100) NOT NULL
-);
-
--- External examiner table
-CREATE TABLE external_table (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(100) NOT NULL,
-    dept VARCHAR(100) NOT NULL,
-    uni VARCHAR(100) NOT NULL
-);
-
--- Teacher name table
-CREATE TABLE teacher_name (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(100) NOT NULL
-);
-
--- Designation table
-CREATE TABLE designation (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(100) NOT NULL
-);
-
--- External table (for external examiner information)
-CREATE TABLE external (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    Teacher_name VARCHAR(100) NOT NULL,
-    Department VARCHAR(100) NOT NULL,
-    University VARCHAR(100) NOT NULL
-);
-```
-
-### Step 3: Create Dynamic Course Tables
-
-For each combination of level and semester, create tables like:
-- `l_1_s_i` (Level 1, Semester I)
-- `l_1_s_ii` (Level 1, Semester II)
-- `l_2_s_i` (Level 2, Semester I)
-- etc.
-
-Example:
-
-```sql
-CREATE TABLE l_1_s_i (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    course_code VARCHAR(50) NOT NULL,
-    course_title VARCHAR(200) NOT NULL,
-    exam_type VARCHAR(50) NOT NULL,
-    credit VARCHAR(10) NOT NULL
-);
-```
-
-### Step 4: Insert Sample Data (Optional)
-
-```sql
--- Insert sample teachers
-INSERT INTO teacher_name (name) VALUES 
-('Dr. John Smith'),
-('Prof. Jane Doe'),
-('Dr. Robert Johnson');
-
--- Insert sample designations
-INSERT INTO designation (name) VALUES 
-('Professor'),
-('Associate Professor'),
-('Assistant Professor'),
-('Lecturer');
-
--- Insert sample external examiners
-INSERT INTO external (Teacher_name, Department, University) VALUES 
-('Dr. External Name', 'Computer Science', 'Example University');
-```
-
-## 📖 Usage
-
-### Running the Application
-
-**From NetBeans:**
-1. Right-click on the project
-2. Select `Run` or press `F6`
-
-**From Command Line:**
-```bash
-# Compile
-javac -cp "mysql-connector-j-8.3.0.jar:." project/*.java
-
-# Run
-java -cp "mysql-connector-j-8.3.0.jar:." project.exam
-```
-
-### Application Workflow
-
-1. **Start the Application**: Run `exam.java` as the main class
-2. **Enter Exam Details**: Select degree, level, semester, and session
-3. **Select Course**: Click "Choose Subject" to load courses, then select a course
-4. **Assign Committee**: Click "Select Teacher" to load teachers and designations, then assign committee members
-5. **Assign Staff**: Click "Select Teacher" to load data, then assign question makers, internal teachers, scrutinizer, and external examiner
-6. **Generate Summary**: Click "Generate" to load and display all collected information
-
-### Navigation
-
-- **Next Page**: Proceed to the next step
-- **Back**: Return to the previous step
-- **Exit**: Close the application (with confirmation)
-
-## 📁 Project Structure
+## Repository Structure
 
 ```
-exam-committee-proposal-for-various-courses/
-├── src/
-│   └── project/
-│       ├── exam.java                    # Main entry point - Exam details form
-│       ├── Course.java                  # Course selection form
-│       ├── Exam_Committee.java          # Committee assignment form
-│       ├── ExamRelatedTopics.java       # Exam staff assignment form
-│       ├── Final.java                   # Summary/Generation form
-│       └── DatabaseConnection.java      # Database utility class
-├── config.properties                    # Database configuration (create this)
-├── README.md                            # This file
-├── build.xml                            # Ant build file
-└── project.properties                   # NetBeans project configuration
+backend/
+    db.js                  # MongoDB connection
+    package.json
+    seed.js                # optional seed data script
+    server.js              # main Express server
+    middleware/
+        auth.js            # JWT auth and role middleware
+    models/                # Mongoose schemas
+        Course.js
+        CourseSelection.js
+        Designation.js
+        Exam.js
+        ExamCommittee.js
+        ExamRelated.js
+        External.js
+        ExternalExaminer.js
+        Proposal.js
+        Teacher.js
+        User.js
+    routes/                # API endpoints
+        auth.js
+        committee.js
+        course.js
+        exam.js
+        examRelated.js
+        proposals.js
+        summary.js
+frontend/
+    package.json
+    public/
+        index.html
+    src/
+        App.js
+        index.css
+        index.js
+        api/
+            service.js      # axios wrappers for backend calls
+        components/         # React components for pages
+            CourseSelection.js
+            Dashboard.js
+            ExamCommittee.js
+            ExamDetails.js
+            ExamRelatedTopics.js
+            FinalSummary.js
+            Landing.js
+            Login.js
+            PageLayout.js
+            Signup.js
+        context/            # React contexts for auth and proposal state
+            AuthContext.js
+            ProposalContext.js
 ```
 
-## 🔒 Security Improvements
+## Setup & Running
 
-This version includes several security enhancements:
+### Prerequisites
 
-### ✅ SQL Injection Prevention
-- All database queries now use `PreparedStatement` instead of string concatenation
-- Parameterized queries prevent SQL injection attacks
+- Node.js (v18+ recommended)
+- MongoDB Atlas or local MongoDB instance
 
-### ✅ Centralized Database Management
-- `DatabaseConnection` utility class manages all database connections
-- Consistent error handling across the application
+### Backend
 
-### ✅ Configuration Management
-- Database credentials stored in `config.properties` file
-- Easy to update without modifying source code
+1. Navigate to `backend` directory:
+   ```bash
+   cd backend
+   ```
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+3. Create a `.env` file with at least:
+   ```env
+   MONGO_URI=<your-mongo-uri>
+   JWT_SECRET=<your-secret>
+   PORT=5000
+   ```
+4. Start server:
+   ```bash
+   npm start
+   ```
+   The API will run on `http://localhost:5000` by default.
 
-### ✅ Error Handling
-- Comprehensive exception handling
-- User-friendly error messages
-- Proper resource cleanup (connections, statements, result sets)
+### Frontend
 
-### ✅ Input Validation
-- Validation checks before database operations
-- Prevents null pointer exceptions
-- Ensures data integrity
+1. Navigate to `frontend` directory:
+   ```bash
+   cd frontend
+   ```
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+3. (Optional) set `REACT_APP_API_BASE` in `.env` if API is on a different host/port.
+4. Start development server:
+   ```bash
+   npm start
+   ```
+   The app will run on `http://localhost:3000` and proxy API requests to backend.
 
-## 🐛 Known Issues
+## Working Procedure
 
-- Dynamic table names based on level/semester: While validated with regex, consider using a unified course table with level/semester columns for better database design
-- The `config.properties` file needs to be created manually - consider auto-generating it on first run
+1. **Signup/Login**
+   - Users register with a name, email, password, and designation (`chairman`, `dean`, `vc`, or `controller`).
+   - Upon login, a JWT token is stored in local storage and used for authenticated calls.
 
-## 🔮 Future Improvements
+2. **Chairman Dashboard**
+   - Can create new draft proposals.
+   - Drafts are editable and can be deleted using the "Delete" button.
+   - Drafts transition to `pending_dean` after signing.
 
-- [ ] Add PDF export functionality for exam committee proposals
-- [ ] Implement user authentication and role-based access
-- [ ] Add ability to edit/update existing proposals
-- [ ] Implement data backup and restore functionality
-- [ ] Add report generation with charts and statistics
-- [ ] Migrate to a unified course table structure instead of dynamic tables
-- [ ] Add unit tests for database operations
-- [ ] Implement logging framework (e.g., Log4j)
+3. **Proposal Flow**
+   - Chairman fills out exam details, course selection, committee, and exam-related topics.
+   - After finalizing, the chairman signs and moves the proposal for dean approval.
+   - Dean, VC, and controller review proposals based on status and add their signatures.
+   - If any approver cancels, status becomes `cancelled`.
+   - Approved proposals are viewable in final summary.
 
-## 🤝 Contributing
+4. **API Interaction**
+   - Frontend uses `src/api/service.js` to call endpoints such as `proposals/`, `auth/`, etc.
+   - Axios instance automatically adds `Authorization` header from local storage token.
 
-Contributions are welcome! Please follow these steps:
+## API Endpoints
 
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
+| Method | Route                       | Description                                 | Role        |
+|--------|-----------------------------|---------------------------------------------|-------------|
+| POST   | `/api/auth/signup`          | Register a new user                         | public      |
+| POST   | `/api/auth/login`           | Authenticate and receive token              | public      |
+| GET    | `/api/auth/me`              | Get current user                            | authenticated |
+| GET    | `/api/proposals`            | List proposals (filtered by role)           | authenticated |
+| POST   | `/api/proposals`            | Create draft proposal                       | chairman    |
+| DELETE | `/api/proposals/:id`        | Delete a draft                              | chairman    |
+| PUT    | `/api/proposals/:id`        | Update draft fields                         | chairman    |
+| POST   | `/api/proposals/:id/sign`   | Upload signature/advance status             | authenticated |
+| POST   | `/api/proposals/:id/cancel` | Cancel a pending proposal                   | authenticated |
+| GET    | `/api/summary`              | Fetch aggregated counts for dashboard       | authenticated |
+| ...    | other resource routes        | course, exam, committee, exam-related data  | various     |
 
-### Coding Standards
+## Frontend Components
 
-- Follow Java naming conventions
-- Add JavaDoc comments for public methods
-- Use meaningful variable names
-- Handle exceptions appropriately
-- Test your changes before submitting
+- `Landing.js` – initial page with login/signup links.
+- `Login.js` / `Signup.js` – user authentication forms.
+- `Dashboard.js` – shows proposals relevant to the user; includes delete functionality for drafts.
+- `ExamDetails.js`, `CourseSelection.js`, `ExamCommittee.js`, `ExamRelatedTopics.js` – wizard steps for proposal creation.
+- `FinalSummary.js` – review and sign/cancel actions for proposals.
+- `PageLayout.js` – common layout wrapper.
 
+## Backend Models
 
+Each Mongoose model corresponds to collections used for storing proposal data:
 
-**Note**: This application was developed as an educational project for managing exam committee proposals in an academic environment. Ensure compliance with your institution's data protection policies before deploying in production.
+- `User` – user accounts with designation.
+- `Proposal` – holds all proposal data and signatures.
+- Additional models link to specific parts of the form (e.g., `Exam`, `CourseSelection`, etc.) used for embedding subdocuments.
+
+## Contributing
+
+1. Fork the repository and create a branch for your feature or bugfix.
+2. Ensure consistent code style and add comments where necessary.
+3. Run the application locally and test thoroughly.
+4. Submit a pull request with a clear description of your changes.
+
+---
+
+Feel free to extend or modify this README as the project evolves!
